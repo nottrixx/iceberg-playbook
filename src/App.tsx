@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
 import { Topbar } from './components/layout/Topbar';
-import { useRouter } from './router';
+import { useRouter, usePendingLeave } from './router';
 
 // Page Views
 import { Home } from './pages/Home';
@@ -22,6 +22,7 @@ import { Settings } from './pages/Settings';
 import { ContentErrorBoundary } from './components/knowledge/ContentErrorBoundary';
 import { StorageRecovery } from './components/knowledge/StorageRecovery';
 import { StateMessage } from './components/knowledge/ApplicationUI';
+import { LeaveDialog } from './components/knowledge/LeaveDialog';
 import { checkStorageIntegrity } from './data';
 import './product.css';
 import { useAuth } from './auth/AuthProvider';
@@ -69,6 +70,7 @@ function WorkspaceApp() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { path, params } = useRouter();
+  const leaveRequest = usePendingLeave();
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => { scrollRef.current?.scrollTo(0, 0); }, [path, params.id, params.slug, params.version]);
 
@@ -101,7 +103,8 @@ function WorkspaceApp() {
       case '/create/guide':
         return <CreateGuide key="create-guide" />;
       case '/guides/[id]/edit':
-        return <CreateGuide key={window.location.hash} />;
+        // Keyed by the accepted route, not the address bar: a blocked Back briefly changes the address.
+        return <CreateGuide key={`edit-${params.id}`} />;
       case '/create/sop':
         return <CreateSOP />;
       case '/create/playbook':
@@ -133,6 +136,8 @@ function WorkspaceApp() {
           <ContentErrorBoundary key={`${path}-${params.id || params.slug || ""}`}>{renderPage()}</ContentErrorBoundary>
         </main>
       </div>
+      {/* Outside main-layout, which is inert while the mobile sidebar is open. */}
+      {leaveRequest.pending && <LeaveDialog onStay={leaveRequest.stay} onLeave={leaveRequest.leave} />}
     </div>
   );
 }
