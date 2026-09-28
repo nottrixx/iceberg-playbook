@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
-import { useRouter } from '../router';
+import { useRouter, useLeaveGuard } from '../router';
 import { getPlaybooks, getIssues, getPrimaryGuide, addGuide, getGuides, publishGuideUpdate, guideContent, formatGuideVersion, formatStorageError, type GuideContent, type VersionedGuide } from '../data';
 import { guideChecklist } from '../guideTemplate';
 import { GuideArticle } from '../components/knowledge/GuideArticle';
@@ -12,6 +12,7 @@ import { toStepDrafts, newStepDraft, type StepDraft } from '../components/knowle
 import { toProblemDrafts, newProblemDraft, updateProblemDraft, removeProblemDraft, type ProblemDraft } from '../components/knowledge/problemDrafts';
 import { buildGuideContent, validateGuideForm } from '../components/knowledge/guideForm';
 import { MediaUploadField } from '../components/knowledge/MediaUploadField';
+import { hasUnsavedChanges, guideEditDirty } from '../components/knowledge/formChanges';
 
 export function CreateGuide() {
   const { path, params } = useRouter();
@@ -35,6 +36,10 @@ function GuideEditor({ initial }: { initial?: VersionedGuide }) {
   const blocked=!issue||!pb||(!base&&!!existing);
   const content:GuideContent=buildGuideContent({title,summary,status,difficulty,estimatedTime,checklist,info,video,pdf,steps,problems,notes},base);
   const hasChanges=!base||JSON.stringify(guideContent(content))!==JSON.stringify(guideContent(base));
+  // A new Guide is compared with the empty form it opened with; draft ids stay out of the comparison.
+  const snapshot={issueId,title,summary,status,difficulty,estimatedTime,checklist,info,video,pdf,steps:steps.map(d=>d.step),problems:problems.map(d=>d.problem),notes};
+  const [initialSnapshot]=useState(snapshot);
+  useLeaveGuard(base?guideEditDirty(hasChanges,changes):hasUnsavedChanges(initialSnapshot,snapshot));
   const fieldErrors=showErrors?validateGuideForm({title,summary,steps,problems}):[]; const invalid=new Set(fieldErrors.map(e=>e.key));
   useEffect(()=>{ if(!revealRequest) return; const field=formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]'); if(field){revealField(field);field.focus();} },[revealRequest]);
   const checkFields=()=>{ setShowErrors(true); const ok=!validateGuideForm({title,summary,steps,problems}).length; if(!ok) setRevealRequest(n=>n+1); return ok; };
@@ -45,7 +50,7 @@ function GuideEditor({ initial }: { initial?: VersionedGuide }) {
       const saved = base
         ? publishGuideUpdate(base.id, content, base.currentVersionId, changes)
         : addGuide({ ...content, issueId, playbookId: pb!.id, revisionHistory: [] });
-      navigate(`/playbooks/${pb!.slug}/guides/${saved.id}`);
+      navigate(`/playbooks/${pb!.slug}/guides/${saved.id}`, { force: true });
     }
     catch(e){setError(formatStorageError(e, 'Could not publish the Guide.'));}
   };
