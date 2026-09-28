@@ -12,7 +12,6 @@ import { toStepDrafts, newStepDraft, type StepDraft } from '../components/knowle
 import { toProblemDrafts, newProblemDraft, updateProblemDraft, removeProblemDraft, type ProblemDraft } from '../components/knowledge/problemDrafts';
 import { buildGuideContent, validateGuideForm } from '../components/knowledge/guideForm';
 import { MediaUploadField } from '../components/knowledge/MediaUploadField';
-import { type FileMetadata } from '../components/knowledge/mediaUtils';
 
 export function CreateGuide() {
   const { path, params } = useRouter();
@@ -27,8 +26,6 @@ function GuideEditor({ initial }: { initial?: VersionedGuide }) {
   const [difficulty,setDifficulty]=useState<GuideContent['difficulty']>(base?.difficulty||'Medium'); const [estimatedTime,setEstimatedTime]=useState(base?.estimatedTime||'15 min');
   const [checklist,setChecklist]=useState(base?guideChecklist(base):[]); const [info,setInfo]=useState(base?.importantInformation||'');
   const [video,setVideo]=useState(base?.video||''); const [pdf,setPdf]=useState(base?.pdf||'');
-  const [videoMeta, setVideoMeta] = useState<FileMetadata | null>(null);
-  const [pdfMeta, setPdfMeta] = useState<FileMetadata | null>(null);
   const [steps,setSteps]=useState<StepDraft[]>(()=>base?toStepDrafts(structuredClone(base.steps)):[newStepDraft()]);
   const [problems,setProblems]=useState<ProblemDraft[]>(()=>base?toProblemDrafts(structuredClone(base.commonProblems)):[]);
   const [notes,setNotes]=useState(base?.internalNotes||''); const [changes,setChanges]=useState(''); const [error,setError]=useState(''); const [preview,setPreview]=useState(false);
@@ -76,11 +73,7 @@ function GuideEditor({ initial }: { initial?: VersionedGuide }) {
         buttonText="Choose Video"
         value={video}
         initialValue={base?.video}
-        fileMeta={videoMeta}
-        onChange={(url, file) => {
-          setVideo(url);
-          setVideoMeta(file ? { name: file.name, size: file.size } : null);
-        }}
+        onChange={(url) => setVideo(url)}
       />
     </FormSection>
     <FormSection title="Step-by-Step"><StepEditor drafts={steps} onChange={setSteps} invalid={invalid}/></FormSection>
@@ -93,11 +86,7 @@ function GuideEditor({ initial }: { initial?: VersionedGuide }) {
         buttonText="Choose PDF"
         value={pdf}
         initialValue={base?.pdf}
-        fileMeta={pdfMeta}
-        onChange={(url, file) => {
-          setPdf(url);
-          setPdfMeta(file ? { name: file.name, size: file.size } : null);
-        }}
+        onChange={(url) => setPdf(url)}
       />
     </FormSection>
     <FormSection title="Common Problems" optional open={!!problems.length} hint="Small troubleshooting notes for problems encountered while following these steps.">

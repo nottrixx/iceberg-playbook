@@ -73,6 +73,8 @@
 .guide-article .knowledge-actions > button, .guide-article .knowledge-actions > a, .guide-restore-dialog button { flex-shrink: 0; white-space: normal; }
 /* Media Upload Fields - Iceberg Minimal Aesthetic */
 .media-upload-container { width: 100%; }
+.media-field { display: flex; flex-direction: column; gap: 8px; }
+.media-field-label { font-weight: 500; font-size: 14px; }
 .media-upload-area { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px 20px; border: 1px dashed var(--border); border-radius: var(--radius-sm); background: var(--primary-white); text-align: center; transition: border-color var(--transition-fast), background-color var(--transition-fast); }
 .media-upload-area.is-dragging { border-color: var(--iceberg-magenta); background: var(--light-background); }
 .media-upload-content { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 10px; }

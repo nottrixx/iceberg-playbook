@@ -1,17 +1,16 @@
 import { useState, useRef, useId, type DragEvent, type ChangeEvent } from 'react';
 import { FileText } from 'lucide-react';
-import { formatFileSize, parseMediaMetadata, registerMediaMetadata, type FileMetadata } from './mediaUtils';
+import { buildMediaUrl, parseMediaMetadata, validateMediaFile, type MediaType } from './mediaUtils';
 import { safeMediaUrl } from '../../guideTemplate';
 
 export interface MediaUploadFieldProps {
-  type: 'video' | 'pdf' | 'image';
+  type: MediaType;
   accept: string;
   acceptedFormatsText: string;
   dropText: string;
   buttonText: string;
   value?: string;
   initialValue?: string;
-  fileMeta?: FileMetadata | null;
   onChange: (url: string, file: File | null) => void;
   showPreviewImage?: boolean;
 }
@@ -24,7 +23,6 @@ export function MediaUploadField({
   buttonText,
   value,
   initialValue,
-  fileMeta,
   onChange,
   showPreviewImage = false,
 }: MediaUploadFieldProps) {
@@ -33,41 +31,11 @@ export function MediaUploadField({
   const inputRef = useRef<HTMLInputElement>(null);
   const inputId = useId();
 
-  // Validate file against accepted extensions and mime types
-  const validateFile = (file: File): boolean => {
-    const ext = `.${file.name.split('.').pop()?.toLowerCase() || ''}`;
-    const mime = file.type.toLowerCase();
-
-    if (type === 'video') {
-      const validExts = ['.mp4', '.webm', '.mov'];
-      const validMimes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-matroska'];
-      if (!validExts.includes(ext) && !validMimes.includes(mime)) {
-        setError('Accepted formats: MP4, WebM, MOV');
-        return false;
-      }
-    } else if (type === 'pdf') {
-      if (ext !== '.pdf' && mime !== 'application/pdf') {
-        setError('Accepted format: PDF');
-        return false;
-      }
-    } else if (type === 'image') {
-      const validExts = ['.png', '.jpg', '.jpeg', '.webp'];
-      const validMimes = ['image/png', 'image/jpeg', 'image/webp'];
-      if (!validExts.includes(ext) && !validMimes.includes(mime)) {
-        setError('Accepted formats: PNG, JPG, WebP');
-        return false;
-      }
-    }
-
-    setError('');
-    return true;
-  };
-
   const handleSelectFile = (file: File) => {
-    if (!validateFile(file)) return;
-    const objectUrl = `${URL.createObjectURL(file)}#name=${encodeURIComponent(file.name)}&size=${file.size}`;
-    registerMediaMetadata(objectUrl, { name: file.name, size: file.size });
-    onChange(objectUrl, file);
+    const fileError = validateMediaFile(type, file);
+    setError(fileError || '');
+    if (fileError) return;
+    onChange(buildMediaUrl(URL.createObjectURL(file), { name: file.name, size: file.size }), file);
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -125,10 +93,8 @@ export function MediaUploadField({
   const isRemoved = Boolean(!hasSelectedMedia && initialValue && initialValue.trim());
   const isReplaced = Boolean(hasSelectedMedia && initialValue && value !== initialValue);
 
-  // Metadata determination
-  const parsedMeta = parseMediaMetadata(value, type);
-  const displayName = fileMeta?.name || parsedMeta.name;
-  const displaySize = fileMeta?.size ? formatFileSize(fileMeta.size) : parsedMeta.formattedSize;
+  // Name and size are read only from the URL, so the editor and the published Guide always agree.
+  const { name: displayName, formattedSize: displaySize } = parseMediaMetadata(value, type);
 
   const replaceButtonText = type === 'video' ? 'Replace Video' : type === 'pdf' ? 'Replace PDF' : 'Replace';
   const removeButtonText = type === 'video' ? 'Remove Video' : type === 'pdf' ? 'Remove PDF' : 'Remove';
@@ -254,9 +220,10 @@ export function MediaUploadField({
             </button>
           </div>
           <p className="helper-text media-format-text">{acceptedFormatsText}</p>
-          {error && <p className="knowledge-error media-inline-error" role="alert">{error}</p>}
         </div>
       )}
+      {/* Outside the branches so a rejected file is reported while empty, while replacing and after removing. */}
+      {error && <p className="knowledge-error media-inline-error" role="alert">{error}</p>}
     </div>
   );
 }

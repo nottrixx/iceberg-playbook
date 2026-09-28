@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { CheckCircle2, Clock, Lock, ChevronDown, FileText, Download, Play } from 'lucide-react';
 import type { Step, CommonProblem, Revision } from '../../data';
 import { safeMediaUrl, videoEmbed } from '../../guideTemplate';
+import { readMediaFile } from '../knowledge/mediaUtils';
 
 export const StatusBadge = ({ status }: { status: 'Verified' | 'Draft' }) => <span className="status-label">{status === 'Verified' && <CheckCircle2 size={14} aria-hidden="true" />}{status}</span>;
 export const DifficultyBadge = ({ difficulty }: { difficulty: 'Easy' | 'Medium' | 'Advanced' }) => <span>{difficulty}</span>;
@@ -66,17 +67,6 @@ export function VideoSection({ url }: { url?: string }) {
 }
 export function PDFSection({ url, updatedAt, filename: customFilename }: { url?: string; updatedAt: string; filename?: string }) {
   const safe = safeMediaUrl(url); if(!safe) return null;
-  let filename = customFilename || 'Complete Guide.pdf';
-  if (!customFilename) {
-    try {
-      const parsed = new URL(safe);
-      if (parsed.hash && parsed.hash.length > 1) {
-        filename = decodeURIComponent(parsed.hash.slice(1));
-      } else {
-        const last = decodeURIComponent(parsed.pathname.split('/').pop() || '');
-        if (last.toLowerCase().endsWith('.pdf')) filename = last;
-      }
-    } catch { /* Fallback */ }
-  }
+  const filename = customFilename || readMediaFile(safe).name || 'Complete Guide.pdf';
   return <section className="article-section"><h2>PDF Guide</h2><div className="document-row"><FileText size={25} aria-hidden="true"/><div><strong>{filename}</strong><p className="helper-text">PDF · Guide updated {updatedAt}</p></div><a href={safe} target="_blank" rel="noreferrer" download={filename}><Download size={15} aria-hidden="true"/>Download PDF</a></div></section>;
 }

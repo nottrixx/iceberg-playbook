@@ -17,7 +17,8 @@ export function StepEditor({ drafts, onChange, invalid }: { drafts: StepDraft[];
     <label>Description *<textarea required aria-label={`Step ${i+1} description`} aria-invalid={isInvalid('description')} rows={4} value={step.description} onChange={e=>update('description',e.target.value)}/></label>
     <label>Expected Result<input aria-label={`Step ${i+1} expected result`} value={step.successIndicator||''} onChange={e=>update('successIndicator',e.target.value)} /></label>
     <details className="disclosure"><summary>Screenshot, notes & references</summary><div className="optional-fields">
-    <label>Screenshot
+    {/* Not a <label>: a label forwards clicks on the file name to the hidden file input and opens the picker. */}
+    <div className="media-field" role="group" aria-labelledby={`step-${id}-screenshot`}><span className="media-field-label" id={`step-${id}-screenshot`}>Screenshot</span>
       <MediaUploadField
         type="image"
         accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp"
@@ -29,7 +30,7 @@ export function StepEditor({ drafts, onChange, invalid }: { drafts: StepDraft[];
         showPreviewImage
         onChange={(url) => update('screenshot', url)}
       />
-    </label>
+    </div>
     {(['importantNote','estimatedTime','videoLink','pdfReference'] as const).map(field=><label key={field}>{{importantNote:'Important Note',estimatedTime:'Estimated Time',videoLink:'Video Reference URL',pdfReference:'PDF Reference URL'}[field]}<input aria-label={`Step ${i+1} ${field}`} aria-invalid={isInvalid(field)} value={step[field]||''} onChange={e=>update(field,e.target.value)}/></label>)}
     </div></details>{drafts.length>1 && <button className="back-link" type="button" onClick={()=>onChange(removeStepDraft(drafts,id))}><Trash2 size={14}/>Remove Step {i+1}</button>}
   </div></details>;
