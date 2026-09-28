@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { useRouter } from '../router';
-import { getPlaybooks, getIssues, getPrimaryGuide, addGuide, getGuides, publishGuideUpdate, guideContent, formatGuideVersion, formatStorageError, type GuideContent, type VersionedGuide, type Step, type CommonProblem } from '../data';
+import { getPlaybooks, getIssues, getPrimaryGuide, addGuide, getGuides, publishGuideUpdate, guideContent, formatGuideVersion, formatStorageError, type GuideContent, type VersionedGuide, type CommonProblem } from '../data';
 import { guideChecklist } from '../guideTemplate';
 import { GuideArticle } from '../components/knowledge/GuideArticle';
 import { IssueSelector } from '../components/knowledge/IssueSelector';
 import { PageHeader, FormSection, StateMessage } from '../components/knowledge/ApplicationUI';
 import { StringList, StepEditor, revealInvalid } from '../components/knowledge/EditorFields';
+import { toStepDrafts, newStepDraft, fromStepDrafts, type StepDraft } from '../components/knowledge/stepDrafts';
 import { MediaUploadField } from '../components/knowledge/MediaUploadField';
 import { type FileMetadata } from '../components/knowledge/mediaUtils';
 
@@ -25,14 +26,14 @@ function GuideEditor({ initial }: { initial?: VersionedGuide }) {
   const [video,setVideo]=useState(base?.video||''); const [pdf,setPdf]=useState(base?.pdf||'');
   const [videoMeta, setVideoMeta] = useState<FileMetadata | null>(null);
   const [pdfMeta, setPdfMeta] = useState<FileMetadata | null>(null);
-  const [steps,setSteps]=useState<Omit<Step,'number'>[]>(base?structuredClone(base.steps):[{title:'',description:''}]);
+  const [steps,setSteps]=useState<StepDraft[]>(()=>base?toStepDrafts(structuredClone(base.steps)):[newStepDraft()]);
   const [problems,setProblems]=useState<CommonProblem[]>(base?structuredClone(base.commonProblems):[]);
   const [notes,setNotes]=useState(base?.internalNotes||''); const [changes,setChanges]=useState(''); const [error,setError]=useState(''); const [preview,setPreview]=useState(false);
   const issue=getIssues().find(i=>i.id===issueId); const pb=getPlaybooks().find(p=>p.id===issue?.playbookId); const existing=issue?getPrimaryGuide(issue.id):undefined;
   const blocked=!issue||!pb||(!base&&!!existing);
   // Do not rewrite legacy content merely by opening the editor. Preserve archived fields.
   const checklistChanged=!base||JSON.stringify(checklist)!==JSON.stringify(guideChecklist(base));
-  const content:GuideContent={title,summary,status,difficulty,estimatedTime,video,pdf,steps:steps.map((s,i)=>({...s,number:i+1})),
+  const content:GuideContent={title,summary,status,difficulty,estimatedTime,video,pdf,steps:fromStepDrafts(steps),
     beforeYouStart:checklistChanged?checklist.map(s=>s.trim()).filter(Boolean):base!.beforeYouStart, requirements:checklistChanged?[]:base!.requirements,
     importantInformation:info,commonProblems:problems.filter(p=>p.problem.trim()),internalNotes:notes,faq:base?.faq||[],relatedItems:base?.relatedItems||[]};
   const hasChanges=!base||JSON.stringify(guideContent(content))!==JSON.stringify(guideContent(base));
@@ -77,7 +78,7 @@ function GuideEditor({ initial }: { initial?: VersionedGuide }) {
         }}
       />
     </FormSection>
-    <FormSection title="Step-by-Step"><StepEditor steps={steps} initialSteps={base?.steps} onChange={setSteps}/></FormSection>
+    <FormSection title="Step-by-Step"><StepEditor drafts={steps} onChange={setSteps}/></FormSection>
     <FormSection title="PDF Guide" optional open={!!pdf}>
       <MediaUploadField
         type="pdf"
