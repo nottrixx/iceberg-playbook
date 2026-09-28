@@ -12,6 +12,8 @@
 .knowledge-editor input[readonly] { background: var(--light-background); color: var(--secondary-text); }
 .knowledge-actions { display: flex; justify-content: flex-end; gap: 16px; }
 .knowledge-error { color: #a40044; padding: 14px; border: 1px solid var(--iceberg-magenta); border-radius: 8px; }
+.knowledge-error ul { margin: 8px 0 0 20px; }
+.editor [aria-invalid="true"] { border-color: var(--iceberg-magenta); }
 .issue-selector { position: relative; }
 .issue-selector label { display: block; font-weight: 600; margin-bottom: 8px; }
 .issue-selector input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; }
